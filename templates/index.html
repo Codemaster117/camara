@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Selfie & Video Recorder</title>
+  <style>
+    body {
+      background: #f0f2f5;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen,
+        Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+    .container {
+      background: white;
+      padding: 2rem 2.5rem;
+      border-radius: 12px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+      text-align: center;
+      max-width: 400px;
+      width: 100%;
+    }
+    h1 {
+      margin-bottom: 1.5rem;
+      color: #333;
+      font-weight: 600;
+    }
+    video, canvas {
+      width: 320px;
+      height: 240px;
+      border-radius: 12px;
+      background: #222;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+      margin-bottom: 1.5rem;
+    }
+    button {
+      background-color: #4a90e2;
+      border: none;
+      color: white;
+      padding: 12px 20px;
+      margin: 0 10px;
+      font-size: 1rem;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+      box-shadow: 0 4px 8px rgba(74,144,226,0.3);
+    }
+    button:hover {
+      background-color: #357ABD;
+      box-shadow: 0 6px 12px rgba(53,122,189,0.5);
+    }
+    #status {
+      margin-top: 1.5rem;
+      font-weight: 500;
+      min-height: 1.5em;
+    }
+    #status.success {
+      color: #28a745;
+    }
+    #status.error {
+      color: #dc3545;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Selfie & Video Recorder</h1>
+    <video id="video" autoplay playsinline></video>
+    <canvas id="canvas" width="320" height="240" style="display:none"></canvas>
+
+    <div>
+      <button id="capture">Capture Selfie</button>
+      <button id="record">Record 10s Video</button>
+    </div>
+    <p id="status"></p>
+  </div>
+
+  <script>
+    const video = document.getElementById('video');
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    const status = document.getElementById('status');
+
+    let mediaRecorder;
+    let recordedChunks = [];
+
+    async function startCamera() {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+        video.srcObject = stream;
+        status.textContent = 'Camera ready';
+        status.className = 'success';
+      } catch (err) {
+        status.textContent = 'Could not access camera: ' + err.message;
+        status.className = 'error';
+      }
+    }
+
+    document.getElementById('capture').addEventListener('click', () => {
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      const dataUrl = canvas.toDataURL('image/png');
+      uploadMedia(dataUrl, 'image');
+    });
+
+    document.getElementById('record').addEventListener('click', () => {
+      recordedChunks = [];
+      const stream = video.srcObject;
+      mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm' });
+      mediaRecorder.ondataavailable = e => {
+        if (e.data.size > 0) recordedChunks.push(e.data);
+      };
+      mediaRecorder.onstop = () => {
+        const blob = new Blob(recordedChunks, { type: 'video/webm' });
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          uploadMedia(reader.result, 'video');
+        };
+        reader.readAsDataURL(blob);
+      };
+      mediaRecorder.start();
+      status.textContent = 'Recording for 10 seconds...';
+      status.className = '';
+      setTimeout(() => {
+        mediaRecorder.stop();
+        status.textContent = 'Recording stopped, uploading...';
+      }, 10000);
+    });
+
+    async function uploadMedia(dataUrl, type) {
+      try {
+        const res = await fetch('/upload', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ [type]: dataUrl })
+        });
+        const json = await res.json();
+        if (json.success) {
+          status.textContent = `${type} uploaded as ${json.filename}`;
+          status.className = 'success';
+        } else {
+          status.textContent = `${type} upload failed: ` + (json.error || 'Unknown error');
+          status.className = 'error';
+        }
+      } catch (err) {
+        status.textContent = `${type} upload error: ${err.message}`;
+        status.className = 'error';
+      }
+    }
+
+    startCamera();
+  </script>
+</body>
+</html>
