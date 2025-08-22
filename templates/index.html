@@ -3,10 +3,10 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Selfie & Video Recorder</title>
+  <title>Foto Toxica📸</title>
   <style>
     body {
-      background: linear-gradient(135deg, #a8edea, #fed6e3);
+      background: linear-gradient(135deg, #8b008b, #fed6e3);
       color: #333;
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       display: flex;
@@ -75,12 +75,12 @@
 </head>
 <body>
   <div class="container">
-    <h1>Selfie & Video Recorder</h1>
+    <h1>Foto Toxica📸</h1>
     <video id="video" autoplay playsinline></video>
     <canvas id="canvas" width="320" height="240" style="display:none"></canvas>
     <div>
-      <button id="capture">Capture Selfie</button>
-      <button id="record">Record 10s Video</button>
+      <button id="capture">Una Foto1️⃣</button>
+      <button id="record">Un Video📽️</button>
     </div>
     <p id="status"></p>
   </div>
@@ -98,18 +98,18 @@
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
         video.srcObject = stream;
-        status.textContent = 'Camera ready';
+        status.textContent = 'Alista esas poses';
         status.className = 'success';
       } catch (err) {
-        status.textContent = 'Could not access camera: ' + err.message;
+        status.textContent = 'No hay camarassss' + err.message;
         status.className = 'error';
       }
     }
 
     document.getElementById('capture').addEventListener('click', () => {
       ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-      const dataUrl = canvas.toDataURL('image/png');
-      uploadMedia(dataUrl, 'image');
+      const dataUrl = canvas.toDataURL('imagen/png');
+      uploadMedia(dataUrl, 'imagen');
     });
 
     document.getElementById('record').addEventListener('click', () => {
@@ -128,11 +128,11 @@
         reader.readAsDataURL(blob);
       };
       mediaRecorder.start();
-      status.textContent = 'Recording for 10 seconds...';
+      status.textContent = 'Estas en la pantalla grande...';
       status.className = '';
       setTimeout(() => {
         mediaRecorder.stop();
-        status.textContent = 'Recording stopped, uploading...';
+        status.textContent = 'Y... Corte';
       }, 10000);
     });
 
@@ -145,14 +145,14 @@
         });
         const json = await res.json();
         if (json.success) {
-          status.textContent = `${type} uploaded as ${json.filename}`;
+          status.textContent = `${type} Tu peli es ${json.filename}`;
           status.className = 'success';
         } else {
-          status.textContent = `${type} upload failed: ` + (json.error || 'Unknown error');
+          status.textContent = `${type} Tienes mucha fama, no hay espacio para otra peli ` + (json.error || 'Unknown error');
           status.className = 'error';
         }
       } catch (err) {
-        status.textContent = `${type} upload error: ${err.message}`;
+        status.textContent = `${type} Aqui esta el problema ${err.message}`;
         status.className = 'error';
       }
     }
